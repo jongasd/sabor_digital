@@ -1,160 +1,86 @@
-const pool = require("../config/database");
+const pool = require('../config/database');
 
 class PedidoRepository {
-  async findAll() {
-    const query = `
-            SELECT 
-                id,
-                cliente,
-                status,
-                total,
-                criado_em
-            FROM pedido
-            ORDER BY criado_em DESC
-        `;
-
-    const [pedidos] = await pool.query(query);
-
-    return pedidos;
-  }
-
-  async findById(id) {
-    const [pedidoRows] = await pool.query(
-      `
-            SELECT 
-                id,
-                cliente,
-                status,
-                total,
-                criado_em
-            FROM pedido
-            WHERE id = ?
-            `,
-      [id],
-    );
-
-    if (pedidoRows.length === 0) {
-      return null;
+    async findAll() {
+        const [rows] = await pool.query('SELECT * FROM pedido ORDER BY criado_em DESC');
+        return rows;
     }
 
-    const pedido = pedidoRows[0];
+    async findById(id) {
+        // Busca o pedido
+        const [pedidoRows] = await pool.query('SELECT * FROM pedido WHERE id = ?', [id]);
+        if (pedidoRows.length === 0) return null;
 
-    const [itensPedido] = await pool.query(
-      `
-            SELECT 
-                ip.id,
-                ip.quantidade,
-                ip.preco_unitario,
+        const pedido = pedidoRows[0];
 
-                p.id AS produto_id,
-                p.nome AS produto_nome,
-                p.descricao AS produto_descricao
-
+        // Busca os itens do pedido com as informações do produto
+        const [itensRows] = await pool.query(`
+            SELECT ip.*, p.nome as produto_nome, p.descricao as produto_descricao 
             FROM item_pedido ip
-
-            INNER JOIN produto p
-                ON p.id = ip.produto_id
-
+            INNER JOIN produto p ON ip.produto_id = p.id
             WHERE ip.pedido_id = ?
-            `,
-      [id],
-    );
+        `, [id]);
 
-    pedido.itens = itensPedido;
+        pedido.itens = itensRows;
+        return pedido;
+    }
 
-    return pedido;
-  }
+    async create(pedidoData, itens) {
+        const { cliente, status, total } = pedidoData;
+        const connection = await pool.getConnection();
 
-  async create(dadosPedido, itensPedido = []) {
-    const connection = await pool.getConnection();
+        try {
+            await connection.beginTransaction();
 
-    try {
-      await connection.beginTransaction();
+            const [pedidoResult] = await connection.query(
+                'INSERT INTO pedido (cliente, status, total) VALUES (?, ?, ?)',
+                [cliente || null, status || 'pendente', total]
+            );
+            const pedidoId = pedidoResult.insertId;
 
-      const { cliente, status, total } = dadosPedido;
+            if (itens && itens.length > 0) {
+                const values = itens.map(item => [
+                    pedidoId,
+                    item.produto_id,
+                    item.quantidade,
+                    item.preco_unitario
+                ]);
 
-      const [pedidoCriado] = await connection.query(
-        `
-                INSERT INTO pedido (
-                    cliente,
-                    status,
-                    total
-                )
-                VALUES (?, ?, ?)
-                `,
-        [cliente || null, status || "pendente", total],
-      );
+                await connection.query(
+                    'INSERT INTO item_pedido (pedido_id, produto_id, quantidade, preco_unitario) VALUES ?',
+                    [values]
+                );
+            }
 
-      const pedidoId = pedidoCriado.insertId;
-
-      if (itensPedido.length > 0) {
-        for (const item of itensPedido) {
-          await connection.query(
-            `
-                        INSERT INTO item_pedido (
-                            pedido_id,
-                            produto_id,
-                            quantidade,
-                            preco_unitario
-                        )
-                        VALUES (?, ?, ?, ?)
-                        `,
-            [pedidoId, item.produto_id, item.quantidade, item.preco_unitario],
-          );
+            await connection.commit();
+            return pedidoId;
+        } catch (error) {
+            await connection.rollback();
+            throw error;
+        } finally {
+            connection.release();
         }
-      }
-
-      await connection.commit();
-
-      return {
-        id: pedidoId,
-        ...dadosPedido,
-        itens: itensPedido,
-      };
-    } catch (error) {
-      await connection.rollback();
-
-      throw new Error(`Erro ao criar pedido: ${error.message}`);
-    } finally {
-      connection.release();
-    }
-  }
-
-  async update(id, dadosAtualizacao) {
-    const campos = [];
-    const valores = [];
-
-    for (const campo in dadosAtualizacao) {
-      if (dadosAtualizacao[campo] !== undefined) {
-        campos.push(`${campo} = ?`);
-        valores.push(dadosAtualizacao[campo]);
-      }
     }
 
-    if (campos.length === 0) {
-      return false;
+    async update(id, pedidoData) {
+        const fields = [];
+        const values = [];
+        for (const [key, value] of Object.entries(pedidoData)) {
+            fields.push(`${key} = ?`);
+            values.push(value);
+        }
+        if (fields.length === 0) return null;
+
+        values.push(id);
+        const query = `UPDATE pedido SET ${fields.join(', ')} WHERE id = ?`;
+        const [result] = await pool.query(query, values);
+        return result.affectedRows;
     }
 
-    valores.push(id);
-
-    const query = `
-            UPDATE pedido
-            SET ${campos.join(", ")}
-            WHERE id = ?
-        `;
-
-    const [resultado] = await pool.query(query, valores);
-
-    return resultado.affectedRows > 0;
-  }
-
-  async delete(id) {
-    const [resultado] = await pool.query("DELETE FROM pedido WHERE id = ?", [
-      id,
-    ]);
-
-    return resultado.affectedRows > 0;
-  }
+    async delete(id) {
+        const [result] = await pool.query('DELETE FROM pedido WHERE id = ?', [id]);
+        return result.affectedRows;
+    }
 }
 
 module.exports = new PedidoRepository();

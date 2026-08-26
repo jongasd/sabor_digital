@@ -7,7 +7,6 @@ const routes = require('./routes');
 app.use(cors()); // Habilita o CORS para permitir requisições do frontend
 app.use(express.json());
 
-// Registro de todas as rotas da API centralizadas
 app.use('/', routes);
 
 module.exports = app;

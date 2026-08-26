@@ -18,5 +18,6 @@ router.get('/', (req, res) => {
 router.use('/produtos', produtoRoutes);
 router.use('/cardapios', cardapioRoutes);
 router.use('/pedidos', pedidoRoutes);
-
+router.use(require("./middlewares/errorHandle"));
+router.use("/auth", require("./routes/authRoute"));
 module.exports = router;

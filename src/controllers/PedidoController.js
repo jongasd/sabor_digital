@@ -1,121 +1,68 @@
-const PedidoService = require("../services/PedidoService");
+const PedidoService = require('../services/PedidoService');
 
 class PedidoController {
-  async create(req, res) {
-    const dadosPedido = req.body;
-
-    try {
-      const novoPedido = await PedidoService.criarPedido(dadosPedido);
-
-      return res.status(201).json({
-        sucesso: true,
-        mensagem: "Pedido criado com sucesso.",
-        dados: novoPedido,
-      });
-    } catch (error) {
-      return res.status(400).json({
-        sucesso: false,
-        erro: error.message,
-      });
+    async create(req, res) {
+        try {
+            const pedido = await PedidoService.criarPedido(req.body);
+            res.status(201).json({
+                mensagem: 'Pedido criado com sucesso',
+                pedido
+            });
+        } catch (error) {
+            res.status(400).json({ erro: error.message });
+        }
     }
-  }
 
-  async getAll(req, res) {
-    try {
-      const listaPedidos = await PedidoService.listarPedidos();
-
-      if (listaPedidos.length === 0) {
-        return res.status(200).json({
-          mensagem: "Nenhum pedido encontrado.",
-          pedidos: [],
-        });
-      }
-
-      return res.status(200).json({
-        total: listaPedidos.length,
-        pedidos: listaPedidos,
-      });
-    } catch (error) {
-      return res.status(500).json({
-        erro: "Erro interno ao listar pedidos.",
-        detalhe: error.message,
-      });
+    async getAll(req, res) {
+        try {
+            const pedidos = await PedidoService.listarPedidos();
+            res.status(200).json(pedidos);
+        } catch (error) {
+            res.status(500).json({ erro: 'Erro ao buscar pedidos', detalhe: error.message });
+        }
     }
-  }
 
-  async getById(req, res) {
-    const { id } = req.params;
-
-    try {
-      const pedido = await PedidoService.obterPedidoPorId(id);
-
-      return res.status(200).json({
-        pedido,
-      });
-    } catch (error) {
-      return res.status(404).json({
-        erro: error.message,
-      });
+    async getById(req, res) {
+        try {
+            const id = req.params.id;
+            const pedido = await PedidoService.obterPedidoPorId(id);
+            res.status(200).json(pedido);
+        } catch (error) {
+            res.status(404).json({ erro: error.message });
+        }
     }
-  }
 
-  async updateStatus(req, res) {
-    const { id } = req.params;
-    const { status } = req.body;
+    async updateStatus(req, res) {
+        try {
+            const id = req.params.id;
+            const { status } = req.body;
+            
+            if (!status) {
+                return res.status(400).json({ erro: 'O campo status é obrigatório.' });
+            }
 
-    try {
-      const statusPermitidos = [
-        "pendente",
-        "em andamento",
-        "finalizado",
-        "cancelado",
-      ];
-
-      if (!status) {
-        return res.status(400).json({
-          erro: "Status não informado.",
-        });
-      }
-
-      if (!statusPermitidos.includes(status.toLowerCase())) {
-        return res.status(400).json({
-          erro: "Status inválido.",
-        });
-      }
-
-      const pedidoAtualizado = await PedidoService.atualizarStatus(id, status);
-
-      return res.status(200).json({
-        mensagem: "Pedido atualizado com sucesso.",
-        pedido: pedidoAtualizado,
-      });
-    } catch (error) {
-      const statusCode = error.message.includes("não encontrado") ? 404 : 400;
-
-      return res.status(statusCode).json({
-        erro: error.message,
-      });
+            const pedidoAtualizado = await PedidoService.atualizarStatus(id, status);
+            res.status(200).json({
+                mensagem: 'Status atualizado com sucesso',
+                pedido: pedidoAtualizado
+            });
+        } catch (error) {
+            // Se for erro de validação é 400, se não encontrou é 404
+            const code = error.message.includes('não encontrado') ? 404 : 400;
+            res.status(code).json({ erro: error.message });
+        }
     }
-  }
 
-  async delete(req, res) {
-    const { id } = req.params;
-
-    try {
-      const pedidoRemovido = await PedidoService.excluirPedido(id);
-
-      return res.status(200).json({
-        mensagem: "Pedido removido com sucesso.",
-        pedido: pedidoRemovido,
-      });
-    } catch (error) {
-      const statusCode = error.message.includes("não encontrado") ? 404 : 400;
-
-      return res.status(statusCode).json({
-        erro: error.message,
-      });
+    async delete(req, res) {
+        try {
+            const id = req.params.id;
+            await PedidoService.excluirPedido(id);
+            res.status(200).json({ mensagem: 'Pedido excluído com sucesso' });
+        } catch (error) {
+            const code = error.message.includes('não encontrado') ? 404 : 400;
+            res.status(code).json({ erro: error.message });
+        }
     }
-  }
 }
 
 module.exports = new PedidoController();
