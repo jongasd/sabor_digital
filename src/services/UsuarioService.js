@@ -46,7 +46,7 @@ const UsuarioService = {
     return usuario;
   },
 
-  registrarUsuario: async (body) => {
+  registrarUsuario: async (body, { permitirAdmin = false } = {}) => {
     validarCamposObrigatorios(body);
 
     const existente = await UsuarioRepository.findByEmail(body.email);
@@ -56,11 +56,17 @@ const UsuarioService = {
 
     const senhaHash = await bcrypt.hash(String(body.senha), SALT_ROUNDS);
 
+    // Registro público NUNCA cria admin, mesmo que body.papel diga "admin" —
+    // só a rota protegida (/auth/registrar-admin, com token de admin) pode
+    // passar permitirAdmin: true. Esconder a opção no front não basta:
+    // quem manda a requisição direto (curl/Postman) ignora o HTML.
+    const papel = permitirAdmin && body.papel === "admin" ? "admin" : "cliente";
+
     const usuario = await UsuarioRepository.create({
       nome: String(body.nome).trim(),
       email: String(body.email).trim().toLowerCase(),
       senhaHash,
-      papel: body.papel === "admin" ? "admin" : "cliente",
+      papel,
     });
 
     return { usuario, token: gerarToken(usuario) };

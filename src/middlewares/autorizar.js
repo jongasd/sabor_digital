@@ -1,5 +1,7 @@
 const AppError = require("./appError");
 
+// Autorização baseada no campo "papel" da tabela usuario (admin | cliente).
+// Uso: autorizar("admin") ou autorizar("admin", "cliente")
 const autorizar =
   (...papeisPermitidos) =>
   (req, res, next) => {
