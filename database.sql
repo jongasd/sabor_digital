@@ -71,4 +71,6 @@ CREATE TABLE IF NOT EXISTS usuario (
     papel ENUM('admin', 'cliente') DEFAULT 'cliente',
     criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     atualizado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP on UPDATE CURRENT_TIMESTAMP
-)
+);
+
+select * from usuario;

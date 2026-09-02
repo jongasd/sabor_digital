@@ -1,67 +1,91 @@
+const jwt = require("jsonwebtoken");
+const bcrypt = require("bcryptjs");
 const UsuarioRepository = require("../repositories/UsuarioRepository");
 const AppError = require("../middlewares/appError");
 
-const CAMPOS_OBRIGATORIOS_CRIACAO = ["nome", "senha", "papel"];
-
-const CAMPOS_ATUALIZAVEIS = ["nome", "senha"];
-
-const parseId = (id) => {
-  const parsed = Number(id);
-  if (!Number.isInteger(parsed) || parsed <= 0) {
-    throw new AppError("ID inválido", 400);
-  }
-  return parsed;
-};
+const CAMPOS_OBRIGATORIOS_CRIACAO = ["nome", "email", "senha"];
+const SALT_ROUNDS = 10;
+const JWT_EXPIRES_IN = "8h";
 
 const validarCamposObrigatorios = (dados) => {
   const faltando = CAMPOS_OBRIGATORIOS_CRIACAO.filter(
     (campo) =>
       dados[campo] === undefined ||
       dados[campo] === null ||
-      dados[campo] === ""
+      dados[campo] === "",
   );
 
   if (faltando.length > 0) {
     throw new AppError(
       `Campos obrigatórios ausentes: ${faltando.join(", ")}`,
-      400
+      400,
     );
   }
 };
+
+const gerarToken = (usuario) =>
+  jwt.sign(
+    { id: usuario.id, nome: usuario.nome, papel: usuario.papel },
+    process.env.JWT_SECRET,
+    { expiresIn: JWT_EXPIRES_IN },
+  );
 
 const UsuarioService = {
   listarTodos: () => UsuarioRepository.findAll(),
 
   buscarPorId: async (id) => {
-    const idValido = parseId(id);
+    const idValido = Number(id);
+    if (!Number.isInteger(idValido) || idValido <= 0) {
+      throw new AppError("ID inválido", 400);
+    }
+
     const usuario = await UsuarioRepository.findById(idValido);
-
     if (!usuario) {
-      throw new AppError("Cliente não encontrado", 404);
+      throw new AppError("Usuário não encontrado", 404);
     }
-
-    return usuario;
-  },
-  buscarPorEmail: async (email) => {
-    const emailValido = parseId(email);
-    const usuario = await UsuarioRepository.findByEmail(idValido);
-
-    if (!usuario) {
-      throw new AppError("Usuario não encontrado", 404);
-    }
-
     return usuario;
   },
 
-  criar: async (body) => {
+  registrarUsuario: async (body) => {
     validarCamposObrigatorios(body);
 
-    const dados = {
-      nome: String(body.nome).trim(),
-      ativo: body.ativo !== undefined ? Number(body.ativo) : 1,
-    };
+    const existente = await UsuarioRepository.findByEmail(body.email);
+    if (existente) {
+      throw new AppError("Já existe um usuário com esse email", 409);
+    }
 
-    return await Cliente.create(dados);
+    const senhaHash = await bcrypt.hash(String(body.senha), SALT_ROUNDS);
+
+    const usuario = await UsuarioRepository.create({
+      nome: String(body.nome).trim(),
+      email: String(body.email).trim().toLowerCase(),
+      senhaHash,
+      papel: body.papel === "admin" ? "admin" : "cliente",
+    });
+
+    return { usuario, token: gerarToken(usuario) };
   },
-}
+
+  login: async (email, senha) => {
+    if (!email || !senha) {
+      throw new AppError("Email e senha são obrigatórios", 400);
+    }
+
+    const usuario = await UsuarioRepository.findByEmail(
+      String(email).trim().toLowerCase(),
+    );
+    if (!usuario) {
+      throw new AppError("Email ou senha inválidos", 401);
+    }
+
+    const senhaConfere = await bcrypt.compare(String(senha), usuario.senha);
+    if (!senhaConfere) {
+      throw new AppError("Email ou senha inválidos", 401);
+    }
+
+    const { senha: _descartada, ...usuarioSemSenha } = usuario;
+    return { usuario: usuarioSemSenha, token: gerarToken(usuario) };
+  },
+};
+
 module.exports = UsuarioService;

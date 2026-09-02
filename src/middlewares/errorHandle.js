@@ -1,6 +1,5 @@
 const AppError = require("./appError");
 
-
 const errorHandler = (erro, req, res, next) => {
   if (erro instanceof AppError) {
     return res.status(erro.statusCode).json({

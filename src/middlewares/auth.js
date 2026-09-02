@@ -12,7 +12,7 @@ const auth = (req, res, next) => {
 
   try {
     const payload = jwt.verify(token, process.env.JWT_SECRET);
-    req.funcionario = payload; // { id_funcionario, login, iat, exp }
+    req.usuario = payload; // { id, nome, papel, iat, exp }
     next();
   } catch (erro) {
     if (erro.name === "TokenExpiredError") {

@@ -2,49 +2,34 @@ const pool = require("../config/database");
 
 class UsuarioRepository {
   async findAll() {
-    const [rows] = await pool.query("SELECT * FROM usuario ORDER BY id DESC");
+    const [rows] = await pool.query(
+      "SELECT id, nome, email, papel, criado_em FROM usuario ORDER BY id DESC",
+    );
     return rows;
   }
+
   async findById(id) {
-    const [usuarioRows] = await pool.query(
-      "SELECT * FROM usuario WHERE id = ?",
+    const [rows] = await pool.query(
+      "SELECT id, nome, email, papel, criado_em FROM usuario WHERE id = ?",
       [id],
     );
-    if (usuarioRows.length === 0) return null;
-
-    const usuario = usuarioRows[0];
-
-    return usuario;
+    return rows[0] || null;
   }
+
+  // Usado no login: aqui SIM precisa vir a senha (hash), para comparar com bcrypt.
   async findByEmail(email) {
-    const resultado = await pool.query(
-      "SELECT * FROM usuario WHERE email = ?",
-      [email],
-    );
-
-    if (resultado.length === 0) return null;
-
-    return resultado;
+    const [rows] = await pool.query("SELECT * FROM usuario WHERE email = ?", [
+      email,
+    ]);
+    return rows[0] || null;
   }
-  async create(id, dados) {
-    const { nome, email, senha, papel } = dados;
-    const connection = await pool.getConnection();
 
-    try {
-      await connection.beginTransaction();
-      const [result] = await connection.query(
-        "INSERT INTO usuario (nome, email, senha, papel) VALUES (?, ?, ?)"
-        [nome, email, senha, papel || 'cliente'],
-      );
-      const usuarioId = result.insertId;
-
-      if (id && id.length > 0) {
-        const values = id.map((id) => [usuarioId, id]);
-        await connection.query("INSERT INTO usuario ()");
-      }
-    } catch (error) {}
-    const resultado = await pool.query("INSERT INTO usuario SET ?", [dados]);
-    return resultado;
+  async create({ nome, email, senhaHash, papel }) {
+    const [result] = await pool.query(
+      "INSERT INTO usuario (nome, email, senha, papel) VALUES (?, ?, ?, ?)",
+      [nome, email, senhaHash, papel || "cliente"],
+    );
+    return this.findById(result.insertId);
   }
 }
 
