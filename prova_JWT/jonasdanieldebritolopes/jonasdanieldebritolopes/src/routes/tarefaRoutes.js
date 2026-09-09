@@ -1,0 +1,10 @@
+const express = require('express');
+const router = express.Router();
+const TarefaController = require('../controllers/TarefaController');
+const { authMiddleware } = require('../middlewares/authMiddleware');
+router.use(authMiddleware);
+router.get('/', TarefaController.listar);
+router.post('/', TarefaController.criar);
+router.patch('/:id/status', TarefaController.atualizarStatus);
+router.delete('/:id', TarefaController.deletar);
+module.exports = router;

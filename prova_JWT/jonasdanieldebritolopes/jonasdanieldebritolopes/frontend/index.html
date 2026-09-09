@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ToDo List - JWT Teste</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <h1>ToDo List API</h1>
+        
+        <!-- Área de Autenticação -->
+        <div id="auth-section" class="card">
+            <h2>Autenticação</h2>
+            <div class="tabs">
+                <button id="btn-tab-login" class="active">Login</button>
+                <button id="btn-tab-registro">Registrar</button>
+            </div>
+            
+            <form id="form-login">
+                <input type="email" id="login-email" placeholder="E-mail" required>
+                <input type="password" id="login-senha" placeholder="Senha" required>
+                <button type="submit">Entrar</button>
+            </form>
+            
+            <form id="form-registro" class="hidden">
+                <input type="text" id="reg-nome" placeholder="Nome Completo" required>
+                <input type="email" id="reg-email" placeholder="E-mail" required>
+                <input type="password" id="reg-senha" placeholder="Senha" required>
+                <button type="submit">Cadastrar</button>
+            </form>
+            <div id="auth-message" class="message"></div>
+        </div>
+
+        <!-- Área Logada (Tarefas) -->
+        <div id="app-section" class="card hidden">
+            <div class="header-logged">
+                <h2>Minhas Tarefas <span id="user-greeting" style="font-size: 16px; font-weight: normal; color: #666; display: block; margin-top: 5px;"></span></h2>
+                <button id="btn-logout" class="btn-danger">Sair</button>
+            </div>
+            
+            <form id="form-tarefa">
+                <input type="text" id="nova-tarefa-titulo" placeholder="Título da Tarefa" required>
+                <input type="text" id="nova-tarefa-desc" placeholder="Descrição (opcional)">
+                <button type="submit">Adicionar Tarefa</button>
+            </form>
+
+            <ul id="lista-tarefas">
+            </ul>
+        </div>
+        
+        <!-- Área Admin (Gerenciamento de Usuários) -->
+        <div id="admin-section" class="card hidden">
+            <div class="header-logged">
+                <h2>Gerenciamento de Usuários <span id="admin-greeting" style="font-size: 16px; font-weight: normal; color: #666; display: block; margin-top: 5px;"></span></h2>
+                <button id="btn-logout-admin" class="btn-danger">Sair</button>
+            </div>
+            
+            <form id="form-delete-user" style="display: flex; gap: 10px;">
+                <select id="select-usuarios" required style="flex: 1; padding: 10px; border: 1px solid #ccc; border-radius: 4px;">
+                    <option value="" disabled selected>Selecione um usuário para excluir</option>
+                </select>
+                <button type="submit" class="btn-danger">Excluir Usuário</button>
+            </form>
+        </div>
+    </div>
+    
+    <script src="app.js"></script>
+</body>
+</html>
