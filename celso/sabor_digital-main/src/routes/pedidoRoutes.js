@@ -1,11 +1,45 @@
-const express = require('express');
+const express = require("express");
 const router = express.Router();
-const PedidoController = require('../controllers/PedidoController');
+const PedidoController = require("../controllers/PedidoController");
 
-router.post('/', PedidoController.create);
-router.get('/', PedidoController.getAll);
-router.get('/:id', PedidoController.getById);
-router.patch('/:id/status', PedidoController.updateStatus);
-router.delete('/:id', PedidoController.delete);
+router.post(
+  "/" /* #swagger.tags = ['Pedidos']
+    #swagger.parameters['body'] = {
+        in: 'body',
+        required: true,
+        schema: {
+            cliente: "Nome do Cliente",
+            itens: [
+                { produto_id: 1, quantidade: 2 }
+            ]
+        }
+    } */,
+  PedidoController.create,
+);
+
+router.get("/", /* #swagger.tags = ['Pedidos'] */ PedidoController.getAll);
+
+router.get(
+  "/:id" /* #swagger.tags = ['Pedidos']
+    #swagger.parameters['id'] = { in: 'path', required: true, type: 'integer' } */,
+  PedidoController.getById,
+);
+
+router.patch(
+  "/:id/status" /* #swagger.tags = ['Pedidos']
+    #swagger.parameters['id'] = { in: 'path', required: true, type: 'integer' }
+    #swagger.parameters['body'] = {
+        in: 'body',
+        required: true,
+        schema: { status: "em_preparo" }
+    } */,
+  PedidoController.updateStatus,
+);
+
+router.delete(
+  "/:id" /* #swagger.tags = ['Pedidos']
+    #swagger.parameters['id'] = { in: 'path', required: true, type: 'integer' } */,
+  PedidoController.delete,
+);
 
 module.exports = router;

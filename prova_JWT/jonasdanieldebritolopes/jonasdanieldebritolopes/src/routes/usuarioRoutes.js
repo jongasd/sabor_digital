@@ -6,7 +6,7 @@ const {
   authAdminMiddleware,
 } = require("../middlewares/authMiddleware");
 router.post("/registrar", UsuarioController.registrar);
-router.post("/login",authMiddleware,  UsuarioController.login);
-router.get("/", authAdminMiddleware, UsuarioController.listar);
-router.delete("/:id", authAdminMiddleware, UsuarioController.deletar);
+router.post("/login",  UsuarioController.login);
+router.get("/",authMiddleware, authAdminMiddleware,  UsuarioController.listar);
+router.delete("/:id",authMiddleware , authAdminMiddleware, UsuarioController.deletar);
 module.exports = router;

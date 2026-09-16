@@ -20,7 +20,6 @@ function authMiddleware(req, res, next) {
     req.usuarioId = decoded.id;
     req.usuarioEmail = decoded.email;
     req.usuarioPapel = decoded.papel;
-    console.log(usuarioPapel)
     return next();
   });
 }

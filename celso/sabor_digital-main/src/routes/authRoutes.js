@@ -1,11 +1,33 @@
-const express = require('express');
+const express = require("express");
 const router = express.Router();
-const UsuarioController = require('../controllers/UsuarioController');
+const UsuarioController = require("../controllers/UsuarioController");
 
-// Rota para cadastrar um novo usuário (Pode ser aberta ou bloqueada no futuro)
-router.post('/registrar', UsuarioController.registrar);
+router.post(
+  "/registrar" /* #swagger.tags = ['Autenticação']
+    #swagger.parameters['body'] = {
+        in: 'body',
+        required: true,
+        schema: {
+            nome: "Nome Completo",
+            email: "usuario@email.com",
+            senha: "senha123",
+            papel: "cliente"
+        }
+    } */,
+  UsuarioController.registrar,
+);
 
-// Rota de Login (Recebe email e senha, devolve o token)
-router.post('/login', UsuarioController.login);
+router.post(
+  "/login" /* #swagger.tags = ['Autenticação']
+    #swagger.parameters['body'] = {
+        in: 'body',
+        required: true,
+        schema: {
+            email: "admin@sabordigital.com",
+            senha: "123456"
+        }
+    } */,
+  UsuarioController.login,
+);
 
 module.exports = router;
