@@ -1,16 +1,27 @@
 const ProdutoService = require("../services/ProdutoService");
 
+// Padroniza a resposta de erro de todos os métodos
+function responderErro(res, erro) {
+  const resposta = {
+    sucesso: false,
+    mensagem: erro.mensagem || erro.message || "Erro interno do servidor",
+  };
+
+  // Só expõe o stack trace fora de produção
+  if (process.env.NODE_ENV !== "production") {
+    resposta.erro = erro.stack || erro;
+  }
+
+  res.status(erro.status || 500).json(resposta);
+}
+
 class ProdutoController {
   async listar(req, res) {
     try {
       const resultado = await ProdutoService.listarProdutos();
       res.json(resultado);
     } catch (erro) {
-      res.status(erro.status || 500).json({
-        sucesso: false,
-        mensagem: erro.mensagem || "Erro interno do servidor",
-        erro: erro.stack || erro,
-      });
+      responderErro(res, erro);
     }
   }
 
@@ -19,11 +30,7 @@ class ProdutoController {
       const resultado = await ProdutoService.buscarProdutoPorId(req.params.id);
       res.json(resultado);
     } catch (erro) {
-      res.status(erro.status || 500).json({
-        sucesso: false,
-        mensagem: erro.mensagem || "Erro interno do servidor",
-        erro: erro.stack || erro,
-      });
+      responderErro(res, erro);
     }
   }
 
@@ -41,13 +48,7 @@ class ProdutoController {
       const resultado = await ProdutoService.cadastrarProduto(dados);
       res.status(201).json(resultado);
     } catch (erro) {
-      res.status(erro.status || 500).json({
-        sucesso: false,
-        mensagem: erro.mensagem || "Erro interno do servidor",
-        erro: erro.stack || erro,
-      });
-    }
-  }
+      responderErro(res, erro);
     }
   }
 
@@ -65,13 +66,7 @@ class ProdutoController {
       const resultado = await ProdutoService.atualizarProduto(req.params.id, dados);
       res.json(resultado);
     } catch (erro) {
-      res.status(erro.status || 500).json({
-        sucesso: false,
-        mensagem: erro.mensagem || "Erro interno do servidor",
-        erro: erro.stack || erro,
-      });
-    }
-  }
+      responderErro(res, erro);
     }
   }
 
@@ -80,11 +75,7 @@ class ProdutoController {
       const resultado = await ProdutoService.deletarProduto(req.params.id);
       res.json(resultado);
     } catch (erro) {
-      res.status(erro.status || 500).json({
-        sucesso: false,
-        mensagem: erro.mensagem || "Erro interno do servidor",
-        erro: erro.stack || erro,
-      });
+      responderErro(res, erro);
     }
   }
 }
