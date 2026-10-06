@@ -1,12 +1,13 @@
 {
-  "name": "somativa",
+  "name": "sabor-digital",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "API Sabor Digital",
+  "main": "src/server.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node src/server.js",
-    "dev": "node --watch src/server.js"
+    "dev": "node --watch src/server.js",
+    "swagger": "node src/swagger.js",
+    "criar-admin": "node src/scripts/criarAdmin.js"
   },
   "keywords": [],
   "author": "",
@@ -20,7 +21,6 @@
     "jsonwebtoken": "^9.0.3",
     "multer": "^2.1.1",
     "mysql2": "^3.22.2",
-    "puppeteer-core": "^25.4.0",
     "swagger-autogen": "^2.23.7",
     "swagger-ui-express": "^5.0.1"
   }

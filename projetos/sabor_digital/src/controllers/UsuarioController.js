@@ -4,9 +4,7 @@ class UsuarioController {
   // Cadastro público: sempre cria "cliente", mesmo que o corpo mande papel: "admin".
   async register(req, res, next) {
     try {
-      const resultado = await UsuarioService.registrarUsuario(req.body, {
-        permitirAdmin: false,
-      });
+      const resultado = await UsuarioService.registrarUsuario(req.body, { permitirAdmin: false });
       res.status(201).json(resultado);
     } catch (erro) {
       next(erro);
@@ -15,6 +13,7 @@ class UsuarioController {
 
   // Cadastro de admin: só acessível por quem já é admin (rota protegida).
   async registerAdmin(req, res, next) {
+    // #swagger.security = [{ "bearerAuth": [] }]
     try {
       const resultado = await UsuarioService.registrarUsuario(
         { ...req.body, papel: "admin" },
@@ -29,13 +28,11 @@ class UsuarioController {
   async login(req, res, next) {
     try {
       const { email, senha } = req.body;
-      const resultado = await UsuarioService.login(email, senha);
-      res.status(200).json(resultado);
+      res.status(200).json(await UsuarioService.login(email, senha));
     } catch (erro) {
       next(erro);
     }
   }
-}
 }
 
 module.exports = new UsuarioController();

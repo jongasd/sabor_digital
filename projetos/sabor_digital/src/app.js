@@ -1,22 +1,37 @@
-const express = require('express');
-const cors = require('cors');
-const path = require('path');
-const swaggerUi = require('swagger-ui-express');
-const swaggerFile = require('./swagger_output.json');
-const app = express();
-const routes = require('./routes'); 
+const express = require("express");
+const cors = require("cors");
+const path = require("path");
+const swaggerUi = require("swagger-ui-express");
+const swaggerFile = require("./swagger_output.json");
+const routes = require("./routes");
+const errorHandler = require("./middlewares/errorHandle");
 
-// Middlewares globais
-app.use(cors()); // Habilita o CORS para permitir requisições do frontend
+const app = express();
+
+app.use(cors());
 app.use(express.json());
 
-// Servir arquivos estáticos (como as imagens de uploads)
-app.use('/public', express.static(path.join(__dirname, '..', 'public')));
+// Express 5 deixa req.body indefinido quando a requisição não tem corpo; garante um objeto
+app.use((req, res, next) => {
+  if (req.body === undefined) req.body = {};
+  next();
+});
 
-// Registro de todas as rotas da API centralizadas
-app.use('/', routes);
+// Arquivos estáticos (imagens de uploads)
+app.use("/public", express.static(path.join(__dirname, "..", "public")));
 
-// Documentação da API com Swagger
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerFile));
+// Documentação da API
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerFile));
+
+// Rotas da API
+app.use("/", routes);
+
+// 404 para rotas que não existem
+app.use((req, res) => {
+  res.status(404).json({ sucesso: false, mensagem: "Rota não encontrada" });
+});
+
+// Tratamento de erros: sempre o último
+app.use(errorHandler);
 
 module.exports = app;

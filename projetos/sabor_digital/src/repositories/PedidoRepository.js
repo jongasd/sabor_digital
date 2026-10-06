@@ -33,15 +33,15 @@ class PedidoRepository {
   }
 
   async create(pedidoData, itens) {
-    const { cliente, status, total } = pedidoData;
+    const { usuario_id, cliente, status, total } = pedidoData;
     const connection = await pool.getConnection();
 
     try {
       await connection.beginTransaction();
 
       const [pedidoResult] = await connection.query(
-        "INSERT INTO pedido (cliente, status, total) VALUES (?, ?, ?)",
-        [cliente || null, status || "pendente", total],
+        "INSERT INTO pedido (usuario_id, cliente, status, total) VALUES (?, ?, ?, ?)",
+        [usuario_id || null, cliente || null, status || "pendente", total],
       );
       const pedidoId = pedidoResult.insertId;
 

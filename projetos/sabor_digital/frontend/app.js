@@ -1,5 +1,16 @@
 // A URL base onde seu backend Node.js + Express está escutando
-const API_URL = 'http://localhost:3000';
+// Em produção, defina window.API_URL antes de carregar este script (ou troque aqui).
+const API_URL = window.API_URL || 'http://localhost:3000';
+
+// Escapa texto vindo da API antes de colocar em innerHTML (evita XSS)
+function escapeHtml(texto) {
+    return String(texto ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
 
 // ----------------------------------------------------
 // 1. MAPEAMENTO DE ELEMENTOS DA TELA
@@ -134,13 +145,12 @@ async function fazerRegistro() {
     const nome = document.getElementById('reg-nome').value;
     const email = document.getElementById('reg-email').value;
     const senha = document.getElementById('reg-senha').value;
-    const papel = document.getElementById('reg-papel').value;
     
     try {
         const response = await fetch(`${API_URL}/auth/registrar`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ nome, email, senha, papel })
+            body: JSON.stringify({ nome, email, senha })
         });
         
         const data = await response.json();
@@ -200,7 +210,7 @@ function renderizarProdutos(produtos) {
         if (produto.imagem) {
             // A API já envia o caminho da imagem com o prefixo "/public/", 
             // Então juntamos URL Base + /public/uploads/produtos/...
-            imgHtml = `<img src="${API_URL}${produto.imagem}" alt="${produto.nome}">`;
+            imgHtml = `<img src="${escapeHtml(API_URL + produto.imagem)}" alt="${escapeHtml(produto.nome)}">`;
         }
 
         // Formata o Preço (número) para o padrão R$ 00,00 da moeda brasileira
@@ -223,8 +233,8 @@ function renderizarProdutos(produtos) {
                 ${imgHtml}
             </div>
             <div class="card-content">
-                <h3 class="card-title">${produto.nome}</h3>
-                <p class="card-desc">${produto.descricao}</p>
+                <h3 class="card-title">${escapeHtml(produto.nome)}</h3>
+                <p class="card-desc">${escapeHtml(produto.descricao)}</p>
                 <div class="card-price">${precoFormatado}</div>
                 ${actionsHtml}
             </div>
@@ -258,7 +268,7 @@ function abrirModal(produto = null) {
         descInput.value = produto.descricao;
         precoInput.value = produto.preco;
         catInput.value = produto.categoria || '';
-        dispInput.checked = produto.disponivel;
+        dispInput.checked = Boolean(produto.disponivel);
         // Imagem não é recarregada por questão de segurança dos browsers. Se ficar vazio não atualiza a imagem, apenas mantêm a que tava.
     } else {
         // Se for produto novo, garante q o formulário é sobre inserção

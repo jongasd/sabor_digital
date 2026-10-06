@@ -18,9 +18,7 @@ class UsuarioRepository {
 
   // Usado no login: aqui SIM precisa vir a senha (hash), para comparar com bcrypt.
   async findByEmail(email) {
-    const [rows] = await pool.query("SELECT * FROM usuario WHERE email = ?", [
-      email,
-    ]);
+    const [rows] = await pool.query("SELECT * FROM usuario WHERE email = ?", [email]);
     return rows[0] || null;
   }
 
@@ -31,7 +29,6 @@ class UsuarioRepository {
     );
     return this.findById(result.insertId);
   }
-}
 }
 
 module.exports = new UsuarioRepository();

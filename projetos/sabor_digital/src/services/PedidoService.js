@@ -1,49 +1,60 @@
 const PedidoRepository = require("../repositories/PedidoRepository");
 const ProdutoRepository = require("../repositories/ProdutoRepository");
+const AppError = require("../middlewares/appError");
+
+const STATUS_VALIDOS = ["pendente", "preparo", "pronto", "entregue"];
+
+const validarId = (id) => {
+  const n = Number(id);
+  if (!Number.isInteger(n) || n <= 0) {
+    throw new AppError("ID inválido", 400);
+  }
+  return n;
+};
 
 class PedidoService {
-  async criarPedido(pedidoData) {
-    const { cliente, itens } = pedidoData;
+  async criarPedido(pedidoData, usuarioId) {
+    const { cliente, itens } = pedidoData || {};
 
-    if (!itens || itens.length === 0) {
-      throw new Error("O pedido deve conter ao menos um item.");
+    if (!Array.isArray(itens) || itens.length === 0) {
+      throw new AppError("O pedido deve conter ao menos um item.", 400);
     }
 
-    let totalCalculado = 0;
+    let totalEmCentavos = 0;
     const itensCompletos = [];
 
     for (const item of itens) {
-      if (!item.produto_id || !item.quantidade || item.quantidade <= 0) {
-        throw new Error(
-          "Cada item deve ter produto_id e quantidade maior que zero.",
-        );
+      const produtoId = Number(item.produto_id);
+      const quantidade = Number(item.quantidade);
+
+      if (!Number.isInteger(produtoId) || produtoId <= 0 || !Number.isInteger(quantidade) || quantidade <= 0) {
+        throw new AppError("Cada item deve ter produto_id e quantidade (número inteiro maior que zero).", 400);
       }
 
-      const produto = await ProdutoRepository.findById(item.produto_id);
+      const produto = await ProdutoRepository.findById(produtoId);
       if (!produto) {
-        throw new Error(`Produto com ID ${item.produto_id} não encontrado.`);
+        throw new AppError(`Produto com ID ${produtoId} não encontrado.`, 404);
       }
 
       if (!produto.disponivel) {
-        throw new Error(
-          `O produto ${produto.nome} está indisponível para pedidos.`,
-        );
+        throw new AppError(`O produto ${produto.nome} está indisponível para pedidos.`, 400);
       }
 
-      const subtotal = produto.preco * item.quantidade;
-      totalCalculado += subtotal;
+      // Soma em centavos para evitar erro de arredondamento do JavaScript (ex.: 0.1 + 0.2)
+      totalEmCentavos += Math.round(Number(produto.preco) * 100) * quantidade;
 
       itensCompletos.push({
         produto_id: produto.id,
-        quantidade: item.quantidade,
-        preco_unitario: produto.preco,
+        quantidade,
+        preco_unitario: Number(produto.preco),
       });
     }
 
     const novoPedido = {
-      cliente,
+      usuario_id: usuarioId,
+      cliente: cliente ? String(cliente).trim() : null,
       status: "pendente",
-      total: totalCalculado,
+      total: totalEmCentavos / 100,
     };
 
     const pedidoId = await PedidoRepository.create(novoPedido, itensCompletos);
@@ -54,46 +65,41 @@ class PedidoService {
     return await PedidoRepository.findAll();
   }
 
-  async obterPedidoPorId(id) {
-    const pedido = await PedidoRepository.findById(id);
-    if (!pedido) {
-      throw new Error("Pedido não encontrado.");
+  // usuario = { id, papel }: cliente só enxerga os próprios pedidos; admin vê todos.
+  async obterPedidoPorId(id, usuario) {
+    const pedido = await PedidoRepository.findById(validarId(id));
+
+    if (!pedido || (usuario.papel !== "admin" && pedido.usuario_id !== usuario.id)) {
+      throw new AppError("Pedido não encontrado.", 404);
     }
     return pedido;
   }
 
   async atualizarStatus(id, novoStatus) {
-    const statusValidos = ["pendente", "preparo", "pronto", "entregue"];
-    if (!statusValidos.includes(novoStatus)) {
-      throw new Error(
-        `Status inválido. Permitidos: ${statusValidos.join(", ")}`,
-      );
+    const pedidoId = validarId(id);
+
+    if (!STATUS_VALIDOS.includes(novoStatus)) {
+      throw new AppError(`Status inválido. Permitidos: ${STATUS_VALIDOS.join(", ")}`, 400);
     }
 
-    const pedidoExistente = await PedidoRepository.findById(id);
+    const pedidoExistente = await PedidoRepository.findById(pedidoId);
     if (!pedidoExistente) {
-      throw new Error("Pedido não encontrado.");
+      throw new AppError("Pedido não encontrado.", 404);
     }
 
-    const affectedRows = await PedidoRepository.update(id, {
-      status: novoStatus,
-    });
-    if (affectedRows === 0) {
-      throw new Error("Não foi possível atualizar o status do pedido.");
-    }
-    return await PedidoRepository.findById(id);
+    await PedidoRepository.update(pedidoId, { status: novoStatus });
+    return await PedidoRepository.findById(pedidoId);
   }
 
   async excluirPedido(id) {
-    const pedidoExistente = await PedidoRepository.findById(id);
+    const pedidoId = validarId(id);
+
+    const pedidoExistente = await PedidoRepository.findById(pedidoId);
     if (!pedidoExistente) {
-      throw new Error("Pedido não encontrado.");
+      throw new AppError("Pedido não encontrado.", 404);
     }
 
-    const affectedRows = await PedidoRepository.delete(id);
-    if (affectedRows === 0) {
-      throw new Error("Falha ao excluir pedido.");
-    }
+    await PedidoRepository.delete(pedidoId);
   }
 }
 

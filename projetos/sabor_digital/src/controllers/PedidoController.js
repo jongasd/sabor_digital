@@ -1,68 +1,56 @@
 const PedidoService = require("../services/PedidoService");
 
 class PedidoController {
-  async create(req, res) {
+  async create(req, res, next) {
+    // #swagger.security = [{ "bearerAuth": [] }]
     try {
-      const pedido = await PedidoService.criarPedido(req.body);
-      res.status(201).json({
-        mensagem: "Pedido criado com sucesso",
-        pedido,
-      });
-    } catch (error) {
-      res.status(400).json({ erro: error.message });
+      const pedido = await PedidoService.criarPedido(req.body, req.usuarioId);
+      res.status(201).json({ sucesso: true, mensagem: "Pedido criado com sucesso", pedido });
+    } catch (erro) {
+      next(erro);
     }
   }
 
-  async getAll(req, res) {
+  async getAll(req, res, next) {
+    // #swagger.security = [{ "bearerAuth": [] }]
     try {
       const pedidos = await PedidoService.listarPedidos();
-      res.status(200).json(pedidos);
-    } catch (error) {
-      res
-        .status(500)
-        .json({ erro: "Erro ao buscar pedidos", detalhe: error.message });
+      res.json({ sucesso: true, dados: pedidos, total: pedidos.length });
+    } catch (erro) {
+      next(erro);
     }
   }
 
-  async getById(req, res) {
+  async getById(req, res, next) {
+    // #swagger.security = [{ "bearerAuth": [] }]
     try {
-      const id = req.params.id;
-      const pedido = await PedidoService.obterPedidoPorId(id);
-      res.status(200).json(pedido);
-    } catch (error) {
-      res.status(404).json({ erro: error.message });
-    }
-  }
-
-  async updateStatus(req, res) {
-    try {
-      const id = req.params.id;
-      const { status } = req.body;
-
-      if (!status) {
-        return res.status(400).json({ erro: "O campo status é obrigatório." });
-      }
-
-      const pedidoAtualizado = await PedidoService.atualizarStatus(id, status);
-      res.status(200).json({
-        mensagem: "Status atualizado com sucesso",
-        pedido: pedidoAtualizado,
+      const pedido = await PedidoService.obterPedidoPorId(req.params.id, {
+        id: req.usuarioId,
+        papel: req.usuarioPapel,
       });
-    } catch (error) {
-      // Se for erro de validação é 400, se não encontrou é 404
-      const code = error.message.includes("não encontrado") ? 404 : 400;
-      res.status(code).json({ erro: error.message });
+      res.json({ sucesso: true, dados: pedido });
+    } catch (erro) {
+      next(erro);
     }
   }
 
-  async delete(req, res) {
+  async updateStatus(req, res, next) {
+    // #swagger.security = [{ "bearerAuth": [] }]
     try {
-      const id = req.params.id;
-      await PedidoService.excluirPedido(id);
-      res.status(200).json({ mensagem: "Pedido excluído com sucesso" });
-    } catch (error) {
-      const code = error.message.includes("não encontrado") ? 404 : 400;
-      res.status(code).json({ erro: error.message });
+      const pedido = await PedidoService.atualizarStatus(req.params.id, req.body.status);
+      res.json({ sucesso: true, mensagem: "Status atualizado com sucesso", pedido });
+    } catch (erro) {
+      next(erro);
+    }
+  }
+
+  async delete(req, res, next) {
+    // #swagger.security = [{ "bearerAuth": [] }]
+    try {
+      await PedidoService.excluirPedido(req.params.id);
+      res.json({ sucesso: true, mensagem: "Pedido excluído com sucesso" });
+    } catch (erro) {
+      next(erro);
     }
   }
 }

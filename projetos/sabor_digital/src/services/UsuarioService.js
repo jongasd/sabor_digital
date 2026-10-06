@@ -6,29 +6,31 @@ const AppError = require("../middlewares/appError");
 const CAMPOS_OBRIGATORIOS_CRIACAO = ["nome", "email", "senha"];
 const SALT_ROUNDS = 10;
 const JWT_EXPIRES_IN = "8h";
+const SENHA_MINIMA = 6;
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 const validarCamposObrigatorios = (dados) => {
   const faltando = CAMPOS_OBRIGATORIOS_CRIACAO.filter(
-    (campo) =>
-      dados[campo] === undefined ||
-      dados[campo] === null ||
-      dados[campo] === "",
+    (campo) => dados[campo] === undefined || dados[campo] === null || dados[campo] === "",
   );
 
   if (faltando.length > 0) {
-    throw new AppError(
-      `Campos obrigatórios ausentes: ${faltando.join(", ")}`,
-      400,
-    );
+    throw new AppError(`Campos obrigatórios ausentes: ${faltando.join(", ")}`, 400);
+  }
+
+  if (!EMAIL_REGEX.test(String(dados.email).trim())) {
+    throw new AppError("Email inválido", 400);
+  }
+
+  if (String(dados.senha).length < SENHA_MINIMA) {
+    throw new AppError(`A senha deve ter pelo menos ${SENHA_MINIMA} caracteres`, 400);
   }
 };
 
 const gerarToken = (usuario) =>
-  jwt.sign(
-    { id: usuario.id, nome: usuario.nome, papel: usuario.papel },
-    process.env.JWT_SECRET,
-    { expiresIn: JWT_EXPIRES_IN },
-  );
+  jwt.sign({ id: usuario.id, nome: usuario.nome, papel: usuario.papel }, process.env.JWT_SECRET, {
+    expiresIn: JWT_EXPIRES_IN,
+  });
 
 const UsuarioService = {
   listarTodos: () => UsuarioRepository.findAll(),
@@ -49,27 +51,27 @@ const UsuarioService = {
   registrarUsuario: async (body, { permitirAdmin = false } = {}) => {
     validarCamposObrigatorios(body);
 
-    const existente = await UsuarioRepository.findByEmail(body.email);
+    const email = String(body.email).trim().toLowerCase();
+
+    const existente = await UsuarioRepository.findByEmail(email);
     if (existente) {
       throw new AppError("Já existe um usuário com esse email", 409);
     }
 
     const senhaHash = await bcrypt.hash(String(body.senha), SALT_ROUNDS);
 
-    // Registro público NUNCA cria admin, mesmo que body.papel diga "admin" —
-    // só a rota protegida (/auth/registrar-admin, com token de admin) pode
-    // passar permitirAdmin: true. Esconder a opção no front não basta:
-    // quem manda a requisição direto (curl/Postman) ignora o HTML.
+    // Registro público NUNCA cria admin, mesmo que body.papel diga "admin":
+    // só a rota protegida (/auth/registrar-admin) passa permitirAdmin: true.
     const papel = permitirAdmin && body.papel === "admin" ? "admin" : "cliente";
 
     const usuario = await UsuarioRepository.create({
       nome: String(body.nome).trim(),
-      email: String(body.email).trim().toLowerCase(),
+      email,
       senhaHash,
       papel,
     });
 
-    return { usuario, token: gerarToken(usuario) };
+    return { sucesso: true, usuario, token: gerarToken(usuario) };
   },
 
   login: async (email, senha) => {
@@ -77,9 +79,7 @@ const UsuarioService = {
       throw new AppError("Email e senha são obrigatórios", 400);
     }
 
-    const usuario = await UsuarioRepository.findByEmail(
-      String(email).trim().toLowerCase(),
-    );
+    const usuario = await UsuarioRepository.findByEmail(String(email).trim().toLowerCase());
     if (!usuario) {
       throw new AppError("Email ou senha inválidos", 401);
     }
@@ -90,7 +90,7 @@ const UsuarioService = {
     }
 
     const { senha: _descartada, ...usuarioSemSenha } = usuario;
-    return { usuario: usuarioSemSenha, token: gerarToken(usuario) };
+    return { sucesso: true, usuario: usuarioSemSenha, token: gerarToken(usuario) };
   },
 };
 

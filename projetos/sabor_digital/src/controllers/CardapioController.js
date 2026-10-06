@@ -1,57 +1,37 @@
 const CardapioService = require("../services/CardapioService");
 
 class CardapioController {
-  async listar(req, res) {
+  async listar(req, res, next) {
     try {
-      const resultado = await CardapioService.listarCardapios();
-      res.json(resultado);
+      res.json(await CardapioService.listarCardapios());
     } catch (erro) {
-      res.status(erro.status || 500).json({
-        sucesso: false,
-        mensagem: erro.mensagem || "Erro interno do servidor",
-        erro: erro.stack || erro,
-      });
+      next(erro);
     }
   }
 
-  async buscarPorId(req, res) {
+  async buscarPorId(req, res, next) {
     try {
-      const resultado = await CardapioService.buscarCardapioPorId(
-        req.params.id,
-      );
-      res.json(resultado);
+      res.json(await CardapioService.buscarCardapioPorId(req.params.id));
     } catch (erro) {
-      res.status(erro.status || 500).json({
-        sucesso: false,
-        mensagem: erro.mensagem || "Erro interno do servidor",
-        erro: erro.stack || erro,
-      });
+      next(erro);
     }
   }
 
-  async cadastrar(req, res) {
+  async cadastrar(req, res, next) {
+    // #swagger.security = [{ "bearerAuth": [] }]
     try {
-      const resultado = await CardapioService.cadastrarCardapio(req.body);
-      res.status(201).json(resultado);
+      res.status(201).json(await CardapioService.cadastrarCardapio(req.body));
     } catch (erro) {
-      res.status(erro.status || 500).json({
-        sucesso: false,
-        mensagem: erro.mensagem || "Erro interno do servidor",
-        erro: erro.stack || erro,
-      });
+      next(erro);
     }
   }
 
-  async deletar(req, res) {
+  async deletar(req, res, next) {
+    // #swagger.security = [{ "bearerAuth": [] }]
     try {
-      const resultado = await CardapioService.deletarCardapio(req.params.id);
-      res.json(resultado);
+      res.json(await CardapioService.deletarCardapio(req.params.id));
     } catch (erro) {
-      res.status(erro.status || 500).json({
-        sucesso: false,
-        mensagem: erro.mensagem || "Erro interno do servidor",
-        erro: erro.stack || erro,
-      });
+      next(erro);
     }
   }
 }

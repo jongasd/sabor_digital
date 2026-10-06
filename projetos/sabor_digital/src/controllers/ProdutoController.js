@@ -1,59 +1,43 @@
 const ProdutoService = require("../services/ProdutoService");
 
-// Padroniza a resposta de erro de todos os métodos
-function responderErro(res, erro) {
-  const resposta = {
-    sucesso: false,
-    mensagem: erro.mensagem || erro.message || "Erro interno do servidor",
-  };
-
-  // Só expõe o stack trace fora de produção
-  if (process.env.NODE_ENV !== "production") {
-    resposta.erro = erro.stack || erro;
-  }
-
-  res.status(erro.status || 500).json(resposta);
-}
-
 class ProdutoController {
-  async listar(req, res) {
+  async listar(req, res, next) {
     try {
-      const resultado = await ProdutoService.listarProdutos();
-      res.json(resultado);
+      res.json(await ProdutoService.listarProdutos());
     } catch (erro) {
-      responderErro(res, erro);
+      next(erro);
     }
   }
 
-  async buscarPorId(req, res) {
+  async buscarPorId(req, res, next) {
     try {
-      const resultado = await ProdutoService.buscarProdutoPorId(req.params.id);
-      res.json(resultado);
+      res.json(await ProdutoService.buscarProdutoPorId(req.params.id));
     } catch (erro) {
-      responderErro(res, erro);
+      next(erro);
     }
   }
 
-  async cadastrar(req, res) {
+  async cadastrar(req, res, next) {
     /*  #swagger.consumes = ['multipart/form-data']
+        #swagger.security = [{ "bearerAuth": [] }]
         #swagger.parameters['nome'] = { in: 'formData', type: 'string', required: true, description: 'Nome do produto' }
         #swagger.parameters['descricao'] = { in: 'formData', type: 'string', required: true, description: 'Descrição do produto' }
         #swagger.parameters['preco'] = { in: 'formData', type: 'number', required: true, description: 'Preço do produto (Ex: 35.50)' }
-        #swagger.parameters['categoria'] = { in: 'formData', type: 'string', required: true, description: 'Categoria (Ex: Massa, Bebida)' }
-        #swagger.parameters['disponivel'] = { in: 'formData', type: 'boolean', required: false, description: 'Status de disponibilidade (1 ou 0)' }
+        #swagger.parameters['categoria'] = { in: 'formData', type: 'string', required: false, description: 'Categoria (Ex: Massa, Bebida)' }
+        #swagger.parameters['disponivel'] = { in: 'formData', type: 'boolean', required: false, description: 'Disponível (true/false)' }
         #swagger.parameters['imagem'] = { in: 'formData', type: 'file', required: false, description: 'Imagem do produto (JPEG, PNG)' }
     */
     try {
       const dados = { ...req.body, file: req.file };
-      const resultado = await ProdutoService.cadastrarProduto(dados);
-      res.status(201).json(resultado);
+      res.status(201).json(await ProdutoService.cadastrarProduto(dados));
     } catch (erro) {
-      responderErro(res, erro);
+      next(erro);
     }
   }
 
-  async atualizar(req, res) {
+  async atualizar(req, res, next) {
     /*  #swagger.consumes = ['multipart/form-data']
+        #swagger.security = [{ "bearerAuth": [] }]
         #swagger.parameters['nome'] = { in: 'formData', type: 'string', required: false }
         #swagger.parameters['descricao'] = { in: 'formData', type: 'string', required: false }
         #swagger.parameters['preco'] = { in: 'formData', type: 'number', required: false }
@@ -63,19 +47,18 @@ class ProdutoController {
     */
     try {
       const dados = { ...req.body, file: req.file };
-      const resultado = await ProdutoService.atualizarProduto(req.params.id, dados);
-      res.json(resultado);
+      res.json(await ProdutoService.atualizarProduto(req.params.id, dados));
     } catch (erro) {
-      responderErro(res, erro);
+      next(erro);
     }
   }
 
-  async deletar(req, res) {
+  async deletar(req, res, next) {
+    // #swagger.security = [{ "bearerAuth": [] }]
     try {
-      const resultado = await ProdutoService.deletarProduto(req.params.id);
-      res.json(resultado);
+      res.json(await ProdutoService.deletarProduto(req.params.id));
     } catch (erro) {
-      responderErro(res, erro);
+      next(erro);
     }
   }
 }

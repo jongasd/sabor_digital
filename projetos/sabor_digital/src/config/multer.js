@@ -1,39 +1,34 @@
-const multer = require('multer');
-const path = require('path');
-const fs = require('fs');
+const multer = require("multer");
+const path = require("path");
+const fs = require("fs");
+const AppError = require("../middlewares/appError");
 
 // Garante que a pasta de uploads exista
-const uploadDir = path.join(__dirname, '..', '..', 'public', 'uploads', 'produtos');
+const uploadDir = path.join(__dirname, "..", "..", "public", "uploads", "produtos");
 if (!fs.existsSync(uploadDir)) {
-    fs.mkdirSync(uploadDir, { recursive: true });
+  fs.mkdirSync(uploadDir, { recursive: true });
 }
 
 const storage = multer.diskStorage({
-    destination: function (req, file, cb) {
-        cb(null, uploadDir);
-    },
-    filename: function (req, file, cb) {
-        // Renomeia o arquivo para evitar colisões
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-        cb(null, uniqueSuffix + path.extname(file.originalname));
-    }
+  destination: (req, file, cb) => cb(null, uploadDir),
+  filename: (req, file, cb) => {
+    // Nome único para evitar colisões; extensão em minúsculo
+    const sufixo = Date.now() + "-" + Math.round(Math.random() * 1e9);
+    cb(null, sufixo + path.extname(file.originalname).toLowerCase());
+  },
 });
 
 const fileFilter = (req, file, cb) => {
-    const allowedMimeTypes = ['image/jpeg', 'image/png', 'image/jpg'];
-    if (allowedMimeTypes.includes(file.mimetype)) {
-        cb(null, true);
-    } else {
-        cb(new Error('Apenas arquivos de imagem (JPEG, JPG, PNG) são permitidos.'));
-    }
+  const permitidos = ["image/jpeg", "image/png", "image/jpg"];
+  if (permitidos.includes(file.mimetype)) {
+    cb(null, true);
+  } else {
+    cb(new AppError("Apenas imagens JPEG, JPG ou PNG são permitidas.", 400));
+  }
 };
 
-const upload = multer({ 
-    storage: storage,
-    fileFilter: fileFilter,
-    limits: {
-        fileSize: 5 * 1024 * 1024 // 5MB
-    }
+module.exports = multer({
+  storage,
+  fileFilter,
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
 });
-
-module.exports = upload;
